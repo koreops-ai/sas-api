@@ -264,3 +264,5 @@ curl -X POST http://localhost:3000/api/analyses \
 ---
 
 **Status: ✅ Ready for Frontend Integration**
+
+Verification commit for koreops-ai

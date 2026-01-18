@@ -258,12 +258,14 @@ export async function getHITLCheckpoint(id: string): Promise<HITLCheckpoint | nu
 
 export async function getPendingHITLCheckpoints(userId: string): Promise<HITLCheckpoint[]> {
   const joinSelect = `*, ${TABLES.analyses}!inner(user_id)`;
-  const { data, error } = await (supabase
+  const response = await (supabase
     .from(TABLES.hitl as any)
     .select(joinSelect as any)
     .eq('status', 'pending')
     .eq(`${TABLES.analyses}.user_id`, userId)
     .order('created_at', { ascending: true }) as any);
+  const data = response?.data as HITLCheckpoint[] | null;
+  const error = response?.error as unknown;
 
   if (error) {
     console.error('Error fetching pending checkpoints:', error);

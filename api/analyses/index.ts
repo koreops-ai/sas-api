@@ -22,7 +22,7 @@ import {
   createAnalysis,
   getPreset,
 } from '../../src/lib/supabase.js';
-import type { AnalysisStatus } from '../../src/types/database.js';
+import type { AnalysisStatus, ModuleType, SocialPlatform } from '../../src/types/database.js';
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   setCorsHeaders(res);
@@ -69,8 +69,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
     const input = validation.data;
 
     // Load preset if provided
-    let selectedModules = input.selected_modules;
-    let socialPlatforms = input.social_platforms;
+    let selectedModules = input.selected_modules as ModuleType[];
+    let socialPlatforms = input.social_platforms as SocialPlatform[] | undefined;
 
     if (input.preset_id) {
       const preset = await getPreset(input.preset_id);
@@ -78,8 +78,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
         sendError(res, 'Preset not found', 404);
         return;
       }
-      selectedModules = preset.modules;
-      socialPlatforms = preset.social_platforms ?? undefined;
+      selectedModules = preset.modules as ModuleType[];
+      socialPlatforms = (preset.social_platforms ?? undefined) as SocialPlatform[] | undefined;
     }
 
     // Create analysis

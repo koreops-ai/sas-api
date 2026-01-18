@@ -110,6 +110,8 @@ export async function createAnalysis(
   delete (payload as Record<string, unknown>).team_id;
   delete (payload as Record<string, unknown>).preset_id;
 
+  console.log('Creating analysis with payload:', JSON.stringify(payload, null, 2));
+
   const { data, error } = await supabase
     .from(TABLES.analyses)
     .insert(payload)
@@ -118,6 +120,8 @@ export async function createAnalysis(
 
   if (error) {
     console.error('Error creating analysis:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    console.error('Payload was:', JSON.stringify(payload, null, 2));
     return null;
   }
   return data;

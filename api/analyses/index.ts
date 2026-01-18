@@ -85,7 +85,6 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
     // Create analysis
     const analysis = await createAnalysis({
       user_id: userId,
-      team_id: null, // TODO: Get from auth context
       name: input.name,
       company_name: input.company_name,
       product_name: input.product_name ?? null,
@@ -95,7 +94,6 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       progress: 0,
       selected_modules: selectedModules,
       social_platforms: socialPlatforms ?? null,
-      preset_id: input.preset_id ?? null,
       estimated_cost: 0, // TODO: Calculate based on modules
       actual_cost: 0,
     });

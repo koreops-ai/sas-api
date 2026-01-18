@@ -22,6 +22,7 @@ import {
   getAnalysisModules,
   getUser,
   supabase,
+  TABLES,
 } from '../../../src/lib/supabase.js';
 
 const UpdateAnalysisSchema = z.object({
@@ -157,13 +158,13 @@ async function handleDelete(
   try {
     // Delete modules first (cascade should handle this, but being explicit)
     await supabase
-      .from('analysis_modules')
+      .from(TABLES.modules)
       .delete()
       .eq('analysis_id', analysis.id);
 
     // Delete the analysis
     const { error } = await supabase
-      .from('analyses')
+      .from(TABLES.analyses)
       .delete()
       .eq('id', analysis.id);
 

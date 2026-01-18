@@ -25,6 +25,17 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   throw new Error('Missing Supabase environment variables');
 }
 
+// Table name mapping (override with env vars if Supabase schema differs)
+export const TABLES = {
+  analyses: process.env.SUPABASE_TABLE_ANALYSES || 'analyses',
+  modules: process.env.SUPABASE_TABLE_MODULES || 'module_results',
+  hitl: process.env.SUPABASE_TABLE_HITL || 'checkpoints',
+  users: process.env.SUPABASE_TABLE_USERS || 'profiles',
+  presets: process.env.SUPABASE_TABLE_PRESETS || 'presets',
+  credits: process.env.SUPABASE_TABLE_CREDITS || 'credit_transactions',
+  evidence: process.env.SUPABASE_TABLE_EVIDENCE || 'evidence',
+};
+
 // Create Supabase client with service role key for server-side operations
 export const supabase: SupabaseClient = createClient(
   SUPABASE_URL,
@@ -41,7 +52,7 @@ export const supabase: SupabaseClient = createClient(
 
 export async function getAnalysis(id: string): Promise<Analysis | null> {
   const { data, error } = await supabase
-    .from('analyses')
+    .from(TABLES.analyses)
     .select('*')
     .eq('id', id)
     .single();
@@ -60,7 +71,7 @@ export async function listAnalyses(
   status?: AnalysisStatus
 ): Promise<{ data: Analysis[]; total: number }> {
   let query = supabase
-    .from('analyses')
+    .from(TABLES.analyses)
     .select('*', { count: 'exact' })
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
@@ -84,7 +95,7 @@ export async function createAnalysis(
   analysis: Omit<Analysis, 'id' | 'created_at' | 'updated_at' | 'completed_at'>
 ): Promise<Analysis | null> {
   const { data, error } = await supabase
-    .from('analyses')
+    .from(TABLES.analyses)
     .insert(analysis)
     .select()
     .single();
@@ -101,7 +112,7 @@ export async function updateAnalysis(
   updates: Partial<Analysis>
 ): Promise<Analysis | null> {
   const { data, error } = await supabase
-    .from('analyses')
+    .from(TABLES.analyses)
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
@@ -131,7 +142,7 @@ export async function updateAnalysisStatus(
 
 export async function getAnalysisModules(analysisId: string): Promise<AnalysisModule[]> {
   const { data, error } = await supabase
-    .from('analysis_modules')
+    .from(TABLES.modules)
     .select('*')
     .eq('analysis_id', analysisId)
     .order('created_at', { ascending: true });
@@ -147,7 +158,7 @@ export async function createModule(
   module: Omit<AnalysisModule, 'id'>
 ): Promise<AnalysisModule | null> {
   const { data, error } = await supabase
-    .from('analysis_modules')
+    .from(TABLES.modules)
     .insert(module)
     .select()
     .single();
@@ -164,7 +175,7 @@ export async function updateModule(
   updates: Partial<AnalysisModule>
 ): Promise<AnalysisModule | null> {
   const { data, error } = await supabase
-    .from('analysis_modules')
+    .from(TABLES.modules)
     .update(updates)
     .eq('id', id)
     .select()
@@ -203,7 +214,7 @@ export async function createHITLCheckpoint(
   checkpoint: Omit<HITLCheckpoint, 'id' | 'created_at' | 'resolved_at'>
 ): Promise<HITLCheckpoint | null> {
   const { data, error } = await supabase
-    .from('hitl_checkpoints')
+    .from(TABLES.hitl)
     .insert(checkpoint)
     .select()
     .single();
@@ -217,7 +228,7 @@ export async function createHITLCheckpoint(
 
 export async function getHITLCheckpoint(id: string): Promise<HITLCheckpoint | null> {
   const { data, error } = await supabase
-    .from('hitl_checkpoints')
+    .from(TABLES.hitl)
     .select('*')
     .eq('id', id)
     .single();
@@ -231,13 +242,10 @@ export async function getHITLCheckpoint(id: string): Promise<HITLCheckpoint | nu
 
 export async function getPendingHITLCheckpoints(userId: string): Promise<HITLCheckpoint[]> {
   const { data, error } = await supabase
-    .from('hitl_checkpoints')
-    .select(`
-      *,
-      analyses!inner(user_id)
-    `)
+    .from(TABLES.hitl)
+    .select(`*, ${TABLES.analyses}!inner(user_id)`)
     .eq('status', 'pending')
-    .eq('analyses.user_id', userId)
+    .eq(`${TABLES.analyses}.user_id`, userId)
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -258,7 +266,7 @@ export async function resolveHITLCheckpoint(
                  action === 'request_revision' ? 'revision_requested' : 'approved';
 
   const { data, error } = await supabase
-    .from('hitl_checkpoints')
+    .from(TABLES.hitl)
     .update({
       status,
       reviewer_id: reviewerId,
@@ -282,7 +290,7 @@ export async function resolveHITLCheckpoint(
 
 export async function getUser(id: string): Promise<User | null> {
   const { data, error } = await supabase
-    .from('users')
+    .from(TABLES.users)
     .select('*')
     .eq('id', id)
     .single();
@@ -314,7 +322,7 @@ export async function recordCreditTransaction(
   transaction: Omit<CreditTransaction, 'id' | 'created_at'>
 ): Promise<CreditTransaction | null> {
   const { data, error } = await supabase
-    .from('credit_transactions')
+    .from(TABLES.credits)
     .insert(transaction)
     .select()
     .single();
@@ -351,7 +359,7 @@ export async function deductCredits(
 
 export async function getPresets(userId: string, teamId?: string): Promise<Preset[]> {
   let query = supabase
-    .from('presets')
+    .from(TABLES.presets)
     .select('*')
     .or(`is_system.eq.true,user_id.eq.${userId}${teamId ? `,team_id.eq.${teamId}` : ''}`);
 
@@ -366,7 +374,7 @@ export async function getPresets(userId: string, teamId?: string): Promise<Prese
 
 export async function getPreset(id: string): Promise<Preset | null> {
   const { data, error } = await supabase
-    .from('presets')
+    .from(TABLES.presets)
     .select('*')
     .eq('id', id)
     .single();
@@ -382,7 +390,7 @@ export async function createPreset(
   preset: Omit<Preset, 'id' | 'created_at'>
 ): Promise<Preset | null> {
   const { data, error } = await supabase
-    .from('presets')
+    .from(TABLES.presets)
     .insert(preset)
     .select()
     .single();
@@ -406,7 +414,7 @@ export async function updatePreset(
   }
 
   const { data, error } = await supabase
-    .from('presets')
+    .from(TABLES.presets)
     .update(updates)
     .eq('id', id)
     .select()
@@ -434,7 +442,7 @@ export async function deletePreset(id: string, userId: string): Promise<boolean>
   }
 
   const { error } = await supabase
-    .from('presets')
+    .from(TABLES.presets)
     .delete()
     .eq('id', id);
 
@@ -451,7 +459,7 @@ export async function storeEvidence(
   evidence: Omit<Evidence, 'id' | 'created_at'>
 ): Promise<Evidence | null> {
   const { data, error } = await supabase
-    .from('evidence')
+    .from(TABLES.evidence)
     .insert(evidence)
     .select()
     .single();
@@ -465,7 +473,7 @@ export async function storeEvidence(
 
 export async function getModuleEvidence(moduleId: string): Promise<Evidence[]> {
   const { data, error } = await supabase
-    .from('evidence')
+    .from(TABLES.evidence)
     .select('*')
     .eq('module_id', moduleId)
     .order('created_at', { ascending: true });
@@ -482,7 +490,7 @@ export async function getLatestEvidenceBySource(
   sourceUrl: string
 ): Promise<Evidence | null> {
   const { data, error } = await supabase
-    .from('evidence')
+    .from(TABLES.evidence)
     .select('*')
     .eq('analysis_id', analysisId)
     .eq('source_url', sourceUrl)

@@ -87,7 +87,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   }
 
   // Verify ownership
-  if (analysis.user_id !== userId && analysis.team_id !== user.team_id) {
+  if (analysis.user_id !== userId) {
     sendError(res, 'Access denied', 403);
     return;
   }
@@ -103,7 +103,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   }
 
   // Check credits
-  if (user.credits_balance < analysis.estimated_cost) {
+  if (user.credits_balance < analysis.credits_estimated) {
     sendError(res, 'Insufficient credits', 402);
     return;
   }

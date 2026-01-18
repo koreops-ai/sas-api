@@ -104,7 +104,7 @@ export class AnalysisOrchestrator {
     }
 
     // Create modules for any selected modules that don't exist yet
-    for (const moduleType of this.analysis.selected_modules) {
+    for (const moduleType of this.analysis.modules) {
       if (!this.modules.has(moduleType)) {
         const newModule = await createModule({
           analysis_id: this.analysisId,
@@ -133,13 +133,13 @@ export class AnalysisOrchestrator {
     if (!this.analysis) return 0;
 
     let cost = 0;
-    for (const moduleType of this.analysis.selected_modules) {
+    for (const moduleType of this.analysis.modules) {
       cost += MODULE_COSTS[moduleType] || 0;
     }
 
     // Add cost per social platform if social sentiment is selected
     if (
-      this.analysis.selected_modules.includes('social_sentiment') &&
+      this.analysis.modules.includes('social_sentiment') &&
       this.analysis.social_platforms
     ) {
       cost += (this.analysis.social_platforms.length - 1) * 3; // Base + 3 per additional platform
@@ -183,7 +183,7 @@ export class AnalysisOrchestrator {
   getReadyModules(): ModuleType[] {
     if (!this.analysis) return [];
 
-    return this.analysis.selected_modules.filter((moduleType) => {
+    return this.analysis.modules.filter((moduleType) => {
       const status = this.getModuleStatus(moduleType);
       return (
         (status === 'pending' || status === 'revision_requested') &&
@@ -222,7 +222,7 @@ export class AnalysisOrchestrator {
         company_name: this.analysis.company_name,
         product_name: this.analysis.product_name,
         description: this.analysis.description,
-        target_market: this.analysis.target_market,
+        target_market: this.analysis.target_markets?.[0] ?? null,
         social_platforms: this.analysis.social_platforms ?? undefined,
         prior_module_data: priorModuleData,
       });
@@ -236,7 +236,7 @@ export class AnalysisOrchestrator {
         company_name: this.analysis.company_name,
         product_name: this.analysis.product_name,
         description: this.analysis.description,
-        target_market: this.analysis.target_market,
+        target_market: this.analysis.target_markets?.[0] ?? null,
         social_platforms: this.analysis.social_platforms ?? undefined,
         prior_module_data: priorModuleData,
         analysis_memory: analysisMemory ?? undefined,
@@ -359,13 +359,13 @@ export class AnalysisOrchestrator {
   async updateProgress(): Promise<number> {
     if (!this.analysis) return 0;
 
-    const totalModules = this.analysis.selected_modules.length;
+    const totalModules = this.analysis.modules.length;
     if (totalModules === 0) return 100;
 
     let completedWeight = 0;
     let inProgressWeight = 0;
 
-    for (const moduleType of this.analysis.selected_modules) {
+    for (const moduleType of this.analysis.modules) {
       const mod = this.modules.get(moduleType);
       if (!mod) continue;
 
@@ -392,7 +392,7 @@ export class AnalysisOrchestrator {
   isComplete(): boolean {
     if (!this.analysis) return false;
 
-    return this.analysis.selected_modules.every((moduleType) => {
+    return this.analysis.modules.every((moduleType) => {
       const status = this.getModuleStatus(moduleType);
       return status === 'completed' || status === 'approved' || status === 'skipped';
     });
@@ -404,7 +404,7 @@ export class AnalysisOrchestrator {
   isAwaitingHITL(): boolean {
     if (!this.analysis) return false;
 
-    return this.analysis.selected_modules.some((moduleType) => {
+    return this.analysis.modules.some((moduleType) => {
       return this.getModuleStatus(moduleType) === 'hitl_pending';
     });
   }
@@ -416,7 +416,7 @@ export class AnalysisOrchestrator {
     if (!this.analysis) return false;
 
     const moduleSummaries: Array<{ module: ModuleType; synthesis: ModuleSynthesisResult }> = [];
-    for (const moduleType of this.analysis.selected_modules) {
+    for (const moduleType of this.analysis.modules) {
       const mod = this.modules.get(moduleType);
       const synthesis = mod?.data?.module_synthesis as ModuleSynthesisResult | undefined;
       if (synthesis) {
@@ -480,7 +480,7 @@ export class AnalysisOrchestrator {
       id: this.analysisId,
       status: this.analysis.status,
       progress: this.analysis.progress,
-      modules: this.analysis.selected_modules.map((type) => ({
+      modules: this.analysis.modules.map((type) => ({
         type,
         status: this.getModuleStatus(type) ?? 'pending',
       })),

@@ -100,15 +100,10 @@ function stripUndefined<T extends Record<string, unknown>>(value: T): T {
 export async function createAnalysis(
   analysis: Omit<
     Analysis,
-    'id' | 'created_at' | 'updated_at' | 'completed_at' | 'team_id' | 'preset_id'
-  > & {
-    team_id?: string | null;
-    preset_id?: string | null;
-  }
+    'id' | 'created_at' | 'updated_at' | 'completed_at' | 'started_at'
+  >
 ): Promise<Analysis | null> {
   const payload = stripUndefined({ ...analysis });
-  delete (payload as Record<string, unknown>).team_id;
-  delete (payload as Record<string, unknown>).preset_id;
 
   console.log('Creating analysis with payload:', JSON.stringify(payload, null, 2));
 

@@ -60,7 +60,7 @@ export async function synthesizeGlobal(
   const userPrompt = `Analysis:
 Company: ${analysis.company_name}
 Product: ${analysis.product_name ?? 'N/A'}
-Target Market: ${analysis.target_market ?? 'N/A'}
+Target Market: ${analysis.target_markets?.[0] ?? 'N/A'}
 
 Module Summaries:
 ${moduleSummaries

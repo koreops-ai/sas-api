@@ -82,20 +82,24 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       socialPlatforms = (preset.social_platforms ?? undefined) as SocialPlatform[] | undefined;
     }
 
-    // Create analysis (cast arrays to database-compatible JSON)
+    // Create analysis using actual Supabase column names
     const analysis = await createAnalysis({
       user_id: userId,
       name: input.name,
       company_name: input.company_name,
       product_name: input.product_name ?? null,
       description: input.description ?? null,
-      target_market: input.target_market ?? null,
+      industry: null,
+      target_markets: input.target_market ? [input.target_market] : null,
+      website_url: null,
       status: 'draft',
       progress: 0,
-      selected_modules: selectedModules as unknown as Analysis['selected_modules'],
-      social_platforms: (socialPlatforms ?? null) as unknown as Analysis['social_platforms'],
-      estimated_cost: 0, // TODO: Calculate based on modules
-      actual_cost: 0,
+      current_module: null,
+      modules: selectedModules,
+      social_platforms: socialPlatforms ?? null,
+      credits_estimated: 0, // TODO: Calculate based on modules
+      credits_used: 0,
+      error_message: null,
     });
 
     if (!analysis) {

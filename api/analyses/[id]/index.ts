@@ -63,8 +63,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
     return;
   }
 
-  // Verify ownership (or team access)
-  if (analysis.user_id !== userId && analysis.team_id !== user.team_id) {
+  // Verify ownership
+  if (analysis.user_id !== userId) {
     sendError(res, 'Access denied', 403);
     return;
   }

@@ -72,22 +72,25 @@ export interface Team {
 export interface Analysis {
   id: string;
   user_id: string;
-  team_id: string | null;
   name: string;
+  description: string | null;
+  industry: string | null;
+  target_markets: string[] | null;
+  website_url: string | null;
   company_name: string;
   product_name: string | null;
-  description: string | null;
-  target_market: string | null;
   status: AnalysisStatus;
   progress: number; // 0-100
-  selected_modules: ModuleType[];
+  current_module: string | null;
+  modules: ModuleType[];
   social_platforms: SocialPlatform[] | null;
-  preset_id: string | null;
-  estimated_cost: number;
-  actual_cost: number;
+  credits_estimated: number;
+  credits_used: number;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
-  completed_at: string | null;
 }
 
 export interface AnalysisModule {

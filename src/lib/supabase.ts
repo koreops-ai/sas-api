@@ -257,21 +257,35 @@ export async function getHITLCheckpoint(id: string): Promise<HITLCheckpoint | nu
 }
 
 export async function getPendingHITLCheckpoints(userId: string): Promise<HITLCheckpoint[]> {
-  const joinSelect = `*, ${TABLES.analyses}!inner(user_id)`;
-  const response = await (supabase
-    .from(TABLES.hitl as any)
-    .select(joinSelect as any)
+  // Use a simpler approach: fetch checkpoints then filter by analysis ownership
+  const { data: checkpoints, error: checkpointError } = await supabase
+    .from(TABLES.hitl)
+    .select('*')
     .eq('status', 'pending')
-    .eq(`${TABLES.analyses}.user_id`, userId)
-    .order('created_at', { ascending: true }) as any);
-  const data = response?.data as HITLCheckpoint[] | null;
-  const error = response?.error as unknown;
+    .order('created_at', { ascending: true });
 
-  if (error) {
-    console.error('Error fetching pending checkpoints:', error);
+  if (checkpointError || !checkpoints) {
+    console.error('Error fetching pending checkpoints:', checkpointError);
     return [];
   }
-  return data || [];
+
+  // Filter by user's analyses
+  const analysisIds = [...new Set(checkpoints.map((c: HITLCheckpoint) => c.analysis_id))];
+  if (analysisIds.length === 0) return [];
+
+  const { data: analyses, error: analysisError } = await supabase
+    .from(TABLES.analyses)
+    .select('id')
+    .eq('user_id', userId)
+    .in('id', analysisIds);
+
+  if (analysisError) {
+    console.error('Error fetching analyses for checkpoints:', analysisError);
+    return [];
+  }
+
+  const userAnalysisIds = new Set((analyses || []).map((a: { id: string }) => a.id));
+  return checkpoints.filter((c: HITLCheckpoint) => userAnalysisIds.has(c.analysis_id));
 }
 
 export async function resolveHITLCheckpoint(

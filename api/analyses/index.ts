@@ -22,7 +22,7 @@ import {
   createAnalysis,
   getPreset,
 } from '../../src/lib/supabase.js';
-import type { AnalysisStatus, ModuleType, SocialPlatform } from '../../src/types/database.js';
+import type { Analysis, AnalysisStatus, ModuleType, SocialPlatform } from '../../src/types/database.js';
 
 async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   setCorsHeaders(res);
@@ -82,7 +82,7 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       socialPlatforms = (preset.social_platforms ?? undefined) as SocialPlatform[] | undefined;
     }
 
-    // Create analysis
+    // Create analysis (cast arrays to database-compatible JSON)
     const analysis = await createAnalysis({
       user_id: userId,
       name: input.name,
@@ -92,8 +92,8 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       target_market: input.target_market ?? null,
       status: 'draft',
       progress: 0,
-      selected_modules: selectedModules,
-      social_platforms: socialPlatforms ?? null,
+      selected_modules: selectedModules as unknown as Analysis['selected_modules'],
+      social_platforms: (socialPlatforms ?? null) as unknown as Analysis['social_platforms'],
       estimated_cost: 0, // TODO: Calculate based on modules
       actual_cost: 0,
     });

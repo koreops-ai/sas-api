@@ -98,7 +98,10 @@ function stripUndefined<T extends Record<string, unknown>>(value: T): T {
 }
 
 export async function createAnalysis(
-  analysis: Omit<Analysis, 'id' | 'created_at' | 'updated_at' | 'completed_at'> & {
+  analysis: Omit<
+    Analysis,
+    'id' | 'created_at' | 'updated_at' | 'completed_at' | 'team_id' | 'preset_id'
+  > & {
     team_id?: string | null;
     preset_id?: string | null;
   }
@@ -255,12 +258,12 @@ export async function getHITLCheckpoint(id: string): Promise<HITLCheckpoint | nu
 
 export async function getPendingHITLCheckpoints(userId: string): Promise<HITLCheckpoint[]> {
   const joinSelect = `*, ${TABLES.analyses}!inner(user_id)`;
-  const { data, error } = await supabase
-    .from(TABLES.hitl)
+  const { data, error } = await (supabase
+    .from(TABLES.hitl as any)
     .select(joinSelect as any)
     .eq('status', 'pending')
     .eq(`${TABLES.analyses}.user_id`, userId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true }) as any);
 
   if (error) {
     console.error('Error fetching pending checkpoints:', error);

@@ -91,12 +91,25 @@ export async function listAnalyses(
   return { data: data || [], total: count || 0 };
 }
 
+function stripUndefined<T extends Record<string, unknown>>(value: T): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined)
+  ) as T;
+}
+
 export async function createAnalysis(
-  analysis: Omit<Analysis, 'id' | 'created_at' | 'updated_at' | 'completed_at'>
+  analysis: Omit<Analysis, 'id' | 'created_at' | 'updated_at' | 'completed_at'> & {
+    team_id?: string | null;
+    preset_id?: string | null;
+  }
 ): Promise<Analysis | null> {
+  const payload = stripUndefined({ ...analysis });
+  delete (payload as Record<string, unknown>).team_id;
+  delete (payload as Record<string, unknown>).preset_id;
+
   const { data, error } = await supabase
     .from(TABLES.analyses)
-    .insert(analysis)
+    .insert(payload)
     .select()
     .single();
 
@@ -241,9 +254,10 @@ export async function getHITLCheckpoint(id: string): Promise<HITLCheckpoint | nu
 }
 
 export async function getPendingHITLCheckpoints(userId: string): Promise<HITLCheckpoint[]> {
+  const joinSelect = `*, ${TABLES.analyses}!inner(user_id)`;
   const { data, error } = await supabase
     .from(TABLES.hitl)
-    .select(`*, ${TABLES.analyses}!inner(user_id)`)
+    .select(joinSelect as any)
     .eq('status', 'pending')
     .eq(`${TABLES.analyses}.user_id`, userId)
     .order('created_at', { ascending: true });

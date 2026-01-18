@@ -27,6 +27,8 @@ import { executeMarketDemand } from '../../../src/modules/market-demand.js';
 import { executeRevenueIntelligence } from '../../../src/modules/revenue-intelligence.js';
 import { executeCompetitiveIntelligence } from '../../../src/modules/competitive-intelligence.js';
 import { executeSocialSentiment } from '../../../src/modules/social-sentiment.js';
+import { executeLinkedInContacts } from '../../../src/modules/linkedin-contacts.js';
+import { executeGoogleMaps } from '../../../src/modules/google-maps.js';
 import { executeFinancialModeling } from '../../../src/modules/financial-modeling.js';
 import { executeRiskAssessment } from '../../../src/modules/risk-assessment.js';
 import { executeOperationalFeasibility } from '../../../src/modules/operational-feasibility.js';
@@ -42,6 +44,8 @@ const MODULE_EXECUTORS: Record<
   revenue_intelligence: executeRevenueIntelligence,
   competitive_intelligence: executeCompetitiveIntelligence,
   social_sentiment: executeSocialSentiment,
+  linkedin_contacts: executeLinkedInContacts,
+  google_maps: executeGoogleMaps,
   financial_modeling: executeFinancialModeling,
   risk_assessment: executeRiskAssessment,
   operational_feasibility: executeOperationalFeasibility,

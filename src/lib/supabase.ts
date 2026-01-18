@@ -477,6 +477,46 @@ export async function getModuleEvidence(moduleId: string): Promise<Evidence[]> {
   return data || [];
 }
 
+export async function getLatestEvidenceBySource(
+  analysisId: string,
+  sourceUrl: string
+): Promise<Evidence | null> {
+  const { data, error } = await supabase
+    .from('evidence')
+    .select('*')
+    .eq('analysis_id', analysisId)
+    .eq('source_url', sourceUrl)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching evidence by source:', error);
+    return null;
+  }
+  return data ?? null;
+}
+
+export async function getLatestEvidenceBySource(
+  analysisId: string,
+  sourceUrl: string
+): Promise<Evidence | null> {
+  const { data, error } = await supabase
+    .from('evidence')
+    .select('*')
+    .eq('analysis_id', analysisId)
+    .eq('source_url', sourceUrl)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    console.error('Error fetching evidence by source:', error);
+    return null;
+  }
+  return data;
+}
+
 // ============ STORAGE (Screenshots, etc.) ============
 
 export async function uploadEvidence(

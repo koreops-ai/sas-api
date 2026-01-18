@@ -21,6 +21,8 @@ export const createAnalysisSchema = z.object({
       'revenue_intelligence',
       'competitive_intelligence',
       'social_sentiment',
+      'linkedin_contacts',
+      'google_maps',
       'financial_modeling',
       'risk_assessment',
       'operational_feasibility',

@@ -19,7 +19,12 @@ import {
   updateModuleStatus,
   createHITLCheckpoint,
   deductCredits,
+  storeEvidence,
 } from './supabase.js';
+import { runChildAgents } from './agents/runner.js';
+import { synthesizeModule, synthesizeGlobal } from './agents/synthesis.js';
+import type { ModuleSynthesisResult } from './agents/types.js';
+import { getMemorySummary, storeMemorySummary } from './agents/memory.js';
 
 // Module dependencies - which modules must complete before others can run
 const MODULE_DEPENDENCIES: Record<ModuleType, ModuleType[]> = {
@@ -27,6 +32,8 @@ const MODULE_DEPENDENCIES: Record<ModuleType, ModuleType[]> = {
   revenue_intelligence: [],
   competitive_intelligence: [],
   social_sentiment: [],
+  linkedin_contacts: [],
+  google_maps: [],
   operational_feasibility: [],
   // Dependent modules
   financial_modeling: ['market_demand'], // OR revenue_intelligence
@@ -39,6 +46,8 @@ const PARALLEL_MODULES: ModuleType[] = [
   'revenue_intelligence',
   'competitive_intelligence',
   'social_sentiment',
+  'linkedin_contacts',
+  'google_maps',
   'operational_feasibility',
 ];
 
@@ -48,6 +57,8 @@ const MODULE_COSTS: Record<ModuleType, number> = {
   revenue_intelligence: 20,
   competitive_intelligence: 25,
   social_sentiment: 10, // base cost, multiplied by platforms selected
+  linkedin_contacts: 12,
+  google_maps: 12,
   financial_modeling: 10,
   risk_assessment: 10,
   operational_feasibility: 15,
@@ -200,8 +211,23 @@ export class AnalysisOrchestrator {
     await updateModuleStatus(module.id, 'running', 0);
 
     try {
-      // Build execution context
-      const context: ModuleExecutionContext = {
+      const priorModuleData = this.collectPriorModuleData(moduleType);
+      const analysisMemory = await getMemorySummary(this.analysisId, 'analysis');
+
+      // Run child agents (specialists) before module execution
+      const agentResults = await runChildAgents(moduleType, {
+        analysis_id: this.analysisId,
+        module_id: module.id,
+        module_type: moduleType,
+        company_name: this.analysis.company_name,
+        product_name: this.analysis.product_name,
+        description: this.analysis.description,
+        target_market: this.analysis.target_market,
+        social_platforms: this.analysis.social_platforms ?? undefined,
+        prior_module_data: priorModuleData,
+      });
+
+      const baseContext: ModuleExecutionContext = {
         analysis_id: this.analysisId,
         module_id: module.id,
         company_name: this.analysis.company_name,
@@ -209,23 +235,45 @@ export class AnalysisOrchestrator {
         description: this.analysis.description,
         target_market: this.analysis.target_market,
         social_platforms: this.analysis.social_platforms ?? undefined,
-        prior_module_data: this.collectPriorModuleData(moduleType),
+        prior_module_data: priorModuleData,
+        analysis_memory: analysisMemory ?? undefined,
+        agent_results: agentResults as Array<Record<string, unknown>>,
       };
 
       // Execute the module
-      const result = await executor(context);
+      const result = await executor(baseContext);
 
       if (result.success) {
+        const baseData =
+          typeof result.data === 'object' && result.data !== null
+            ? (result.data as Record<string, unknown>)
+            : { value: result.data };
+
+        let moduleSynthesis: ModuleSynthesisResult | null = null;
+        if (agentResults.length > 0) {
+          moduleSynthesis = await synthesizeModule(moduleType, baseData, agentResults);
+        }
+
+        const moduleData: Record<string, unknown> = {
+          ...baseData,
+          agent_results: agentResults,
+          module_synthesis: moduleSynthesis,
+        };
+
         // Update module with results
         await updateModuleStatus(
           module.id,
           this.options.enableHITL ? 'hitl_pending' : 'completed',
           100,
-          result.data as Record<string, unknown>
+          moduleData
         );
 
         // Track cost
         this.totalCost += result.cost;
+        this.totalCost += agentResults.reduce((sum, item) => sum + item.cost, 0);
+        if (moduleSynthesis) {
+          this.totalCost += moduleSynthesis.cost;
+        }
 
         // Create HITL checkpoint if enabled
         if (this.options.enableHITL) {
@@ -234,7 +282,7 @@ export class AnalysisOrchestrator {
             module_id: module.id,
             module_type: moduleType,
             status: 'pending',
-            data_snapshot: result.data as Record<string, unknown>,
+            data_snapshot: moduleData,
             reviewer_id: null,
             reviewer_comment: null,
             action: null,
@@ -247,7 +295,16 @@ export class AnalysisOrchestrator {
 
         // Refresh module data
         module.status = this.options.enableHITL ? 'hitl_pending' : 'completed';
-        module.data = result.data as Record<string, unknown>;
+        module.data = moduleData;
+
+        if (moduleSynthesis?.summary) {
+          await storeMemorySummary({
+            analysisId: this.analysisId,
+            moduleId: module.id,
+            scope: 'analysis',
+            summary: moduleSynthesis.summary,
+          });
+        }
 
         return true;
       } else {
@@ -354,6 +411,37 @@ export class AnalysisOrchestrator {
    */
   async finalize(): Promise<boolean> {
     if (!this.analysis) return false;
+
+    const moduleSummaries: Array<{ module: ModuleType; synthesis: ModuleSynthesisResult }> = [];
+    for (const moduleType of this.analysis.selected_modules) {
+      const mod = this.modules.get(moduleType);
+      const synthesis = mod?.data?.module_synthesis as ModuleSynthesisResult | undefined;
+      if (synthesis) {
+        moduleSummaries.push({ module: moduleType, synthesis });
+      }
+    }
+
+    if (moduleSummaries.length > 0) {
+      const globalSynthesis = await synthesizeGlobal(this.analysis, moduleSummaries);
+      const firstModuleId = this.modules.get(moduleSummaries[0].module)?.id;
+      if (firstModuleId) {
+        await storeEvidence({
+          analysis_id: this.analysisId,
+          module_id: firstModuleId,
+          source_url: 'global-synthesis',
+          source_type: 'api_response',
+          content_type: 'application/json',
+          storage_path: `analyses/${this.analysisId}/global-synthesis.json`,
+          metadata: {
+            summary: globalSynthesis.executive_summary,
+            go_no_go: globalSynthesis.go_no_go,
+            citations: globalSynthesis.citations,
+            global_synthesis: globalSynthesis,
+          },
+        });
+      }
+      this.totalCost += globalSynthesis.cost;
+    }
 
     // Deduct credits
     const success = await deductCredits(

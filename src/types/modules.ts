@@ -208,6 +208,35 @@ export interface SocialSentimentData {
   notable_mentions: Mention[];
 }
 
+// ============ LINKEDIN CONTACTS ============
+
+export interface LinkedInContactData {
+  companies: Array<{
+    company: string;
+    contacts: Array<{
+      name: string;
+      title: string;
+      profile_url: string;
+      relevance_score: number;
+    }>;
+  }>;
+  summary: string;
+}
+
+// ============ GOOGLE MAPS ============
+
+export interface GoogleMapsData {
+  summary: string;
+  places: Array<{
+    name: string;
+    rating?: number;
+    reviews_count?: number;
+    address?: string;
+    website?: string;
+    url?: string;
+  }>;
+}
+
 export interface PlatformSentiment {
   platform: SocialPlatform;
   posts_analyzed: number;
@@ -412,6 +441,15 @@ export interface ModuleExecutionContext {
   target_market: string | null;
   social_platforms?: SocialPlatform[];
   prior_module_data?: Record<string, unknown>;
+  analysis_memory?: string;
+  agent_results?: Array<Record<string, unknown>>;
+  module_synthesis?: {
+    summary: string;
+    highlights: string[];
+    risks: string[];
+    recommendations: string[];
+    citations: string[];
+  };
 }
 
 export interface ModuleResult<T> {

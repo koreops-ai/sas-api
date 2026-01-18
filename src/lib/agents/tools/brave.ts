@@ -83,7 +83,7 @@ export async function searchBrave(
     throw new Error(`Brave Search error: ${response.status} ${response.statusText}`);
   }
 
-  const payload = await response.json();
+  const payload = (await response.json()) as any;
   const rawResults = Array.isArray(payload?.web?.results) ? payload.web.results : [];
   const results: BraveSearchResult[] = rawResults.slice(0, 8).map((item: any) => ({
     title: item.title ?? 'Untitled',

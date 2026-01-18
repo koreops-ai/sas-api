@@ -50,7 +50,7 @@ export async function runLinkedInSearch(options: {
   if (!runResponse.ok) {
     throw new Error(`Apify run failed: ${runResponse.status} ${runResponse.statusText}`);
   }
-  const runPayload = await runResponse.json();
+  const runPayload = (await runResponse.json()) as any;
   const datasetId = runPayload?.data?.defaultDatasetId as string | undefined;
   if (!datasetId) {
     throw new Error('Apify run did not return dataset');
@@ -64,7 +64,7 @@ export async function runLinkedInSearch(options: {
   if (!datasetResponse.ok) {
     throw new Error(`Apify dataset fetch failed: ${datasetResponse.status} ${datasetResponse.statusText}`);
   }
-  const items = await datasetResponse.json();
+  const items = (await datasetResponse.json()) as any;
 
   const contacts: ApifyLinkedInContact[] = (Array.isArray(items) ? items : []).map((item: any) => ({
     name: item.name ?? item.fullName ?? 'Unknown',

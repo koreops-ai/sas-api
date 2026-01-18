@@ -135,7 +135,7 @@ Return JSON with:
     run: async (context) => {
       const start = Date.now();
       const query = `${context.company_name} ${context.product_name ?? ''} market research ${context.target_market ?? ''}`.trim();
-      let serpResults = [];
+      let serpResults: Array<{ title: string; link: string; snippet?: string }> = [];
       let evidencePaths: string[] = [];
       let sources: string[] = [];
 

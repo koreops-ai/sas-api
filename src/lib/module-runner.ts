@@ -28,6 +28,14 @@ const MODULE_EXECUTORS: Record<
     const { executeSocialSentiment } = await import('../modules/social-sentiment.js');
     return executeSocialSentiment;
   },
+  linkedin_contacts: async () => {
+    const { executeLinkedInContacts } = await import('../modules/linkedin-contacts.js');
+    return executeLinkedInContacts;
+  },
+  google_maps: async () => {
+    const { executeGoogleMaps } = await import('../modules/google-maps.js');
+    return executeGoogleMaps;
+  },
   financial_modeling: async () => {
     const { executeFinancialModeling } = await import('../modules/financial-modeling.js');
     return executeFinancialModeling;

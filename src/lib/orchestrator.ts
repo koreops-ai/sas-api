@@ -226,6 +226,9 @@ export class AnalysisOrchestrator {
         social_platforms: this.analysis.social_platforms ?? undefined,
         prior_module_data: priorModuleData,
       });
+      const agentResultsForContext: Array<Record<string, unknown>> = agentResults.map((result) => ({
+        ...result,
+      }));
 
       const baseContext: ModuleExecutionContext = {
         analysis_id: this.analysisId,
@@ -237,7 +240,7 @@ export class AnalysisOrchestrator {
         social_platforms: this.analysis.social_platforms ?? undefined,
         prior_module_data: priorModuleData,
         analysis_memory: analysisMemory ?? undefined,
-        agent_results: agentResults as Array<Record<string, unknown>>,
+        agent_results: agentResultsForContext,
       };
 
       // Execute the module
@@ -256,7 +259,7 @@ export class AnalysisOrchestrator {
 
         const moduleData: Record<string, unknown> = {
           ...baseData,
-          agent_results: agentResults,
+          agent_results: agentResultsForContext,
           module_synthesis: moduleSynthesis,
         };
 

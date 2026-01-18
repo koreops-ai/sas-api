@@ -46,7 +46,7 @@ export async function fetchKeywordMetrics(options: {
   if (!response.ok) {
     throw new Error(`DataForSEO Labs error: ${response.status} ${response.statusText}`);
   }
-  const json = await response.json();
+  const json = (await response.json()) as any;
   const items = json?.tasks?.[0]?.result ?? [];
   const keywords: DataForSeoKeyword[] = items.map((item: any) => ({
     keyword: item.keyword,
@@ -105,7 +105,7 @@ export async function searchDataForSeo(options: {
   if (!response.ok) {
     throw new Error(`DataForSEO SERP error: ${response.status} ${response.statusText}`);
   }
-  const json = await response.json();
+  const json = (await response.json()) as any;
   const items = json?.tasks?.[0]?.result?.[0]?.items ?? [];
   const results = items
     .filter((item: any) => item.type === 'organic')

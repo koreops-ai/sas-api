@@ -34,7 +34,7 @@ export async function searchSerpApi(
   if (!response.ok) {
     throw new Error(`SerpAPI error: ${response.status} ${response.statusText}`);
   }
-  const payload = await response.json();
+  const payload = (await response.json()) as any;
 
   const organic = Array.isArray(payload.organic_results)
     ? payload.organic_results

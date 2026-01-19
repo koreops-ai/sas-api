@@ -15,11 +15,11 @@ interface AgentDefinition {
 }
 
 const MODEL_MAP = {
-  keywords_agent: { provider: 'gemini', model: 'gemini-3-flash' },
-  sentiment_agent: { provider: 'gemini', model: 'gemini-3-flash' },
-  web_research_agent: { provider: 'gemini', model: 'gemini-3-flash' },
-  linkedin_contact_agent: { provider: 'gemini', model: 'gemini-3-flash' },
-  google_maps_agent: { provider: 'gemini', model: 'gemini-3-flash' },
+  keywords_agent: { provider: 'gemini', model: 'gemini-1.5-flash' },
+  sentiment_agent: { provider: 'gemini', model: 'gemini-1.5-flash' },
+  web_research_agent: { provider: 'gemini', model: 'gemini-1.5-flash' },
+  linkedin_contact_agent: { provider: 'gemini', model: 'gemini-1.5-flash' },
+  google_maps_agent: { provider: 'gemini', model: 'gemini-1.5-flash' },
 } as const;
 
 const SYNTHESIS_MODEL = {

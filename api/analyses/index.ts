@@ -68,8 +68,11 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
 
     const input = validation.data;
 
+    console.log('Input data:', JSON.stringify(input, null, 2));
+
     // Load preset if provided
     let selectedModules = input.selected_modules as ModuleType[];
+    console.log('Selected modules:', selectedModules);
     let socialPlatforms = input.social_platforms as SocialPlatform[] | undefined;
 
     if (input.preset_id) {

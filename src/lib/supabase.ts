@@ -1,6 +1,7 @@
 /**
  * Supabase client configuration
  * SAS Market Validation Platform
+ * Updated: 2026-01-19 - Fixed module_results schema mapping
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';

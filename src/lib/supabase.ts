@@ -325,7 +325,7 @@ export async function getUser(id: string): Promise<User | null> {
     .from(TABLES.users)
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error fetching user:', error);

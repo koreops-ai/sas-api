@@ -52,7 +52,11 @@ export async function runJsonCompletion<T>(
     });
     const content = response.choices[0]?.message?.content || '{}';
     const jsonText = extractJson(content);
-    return { data: JSON.parse(jsonText) as T, raw: content, cost: 0 };
+    try {
+      return { data: JSON.parse(jsonText) as T, raw: content, cost: 0 };
+    } catch (parseError) {
+      throw new Error(`Failed to parse OpenAI JSON response: ${content.substring(0, 500)}...`);
+    }
   }
 
   if (!GEMINI_API_KEY) {
@@ -64,5 +68,9 @@ export async function runJsonCompletion<T>(
   const result = await geminiModel.generateContent(prompt);
   const content = result.response.text();
   const jsonText = extractJson(content);
-  return { data: JSON.parse(jsonText) as T, raw: content, cost: 0 };
+  try {
+    return { data: JSON.parse(jsonText) as T, raw: content, cost: 0 };
+  } catch (parseError) {
+    throw new Error(`Failed to parse Gemini JSON response: ${content.substring(0, 500)}...`);
+  }
 }

@@ -177,6 +177,11 @@ Return JSON with:
         }
       }
 
+      // Fail gracefully if no search results available
+      if (serpResults.length === 0) {
+        throw new Error('No search results available - all search APIs failed or returned empty results');
+      }
+
       const systemPrompt =
         'You are a web research analyst. Summarize key facts with citations.';
       const userPrompt = `Company: ${context.company_name}

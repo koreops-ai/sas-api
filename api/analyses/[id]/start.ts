@@ -174,8 +174,24 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
       return { moduleType, success };
     });
 
-    // Wait for parallel modules to complete
-    const results = await Promise.all(executionPromises);
+    // Wait for parallel modules to complete - use allSettled to handle failures gracefully
+    const settledResults = await Promise.allSettled(executionPromises);
+
+    // Process results, marking failed modules appropriately
+    const results: Array<{ moduleType: ModuleType; success: boolean; error?: string }> = [];
+    for (const [index, settledResult] of settledResults.entries()) {
+      const moduleType = readyModules[index];
+      if (settledResult.status === 'fulfilled') {
+        results.push(settledResult.value);
+      } else {
+        // Module execution threw an error - mark as failed
+        const errorMessage = settledResult.reason instanceof Error
+          ? settledResult.reason.message
+          : 'Unknown error during module execution';
+        console.error(`Module ${moduleType} failed:`, errorMessage);
+        results.push({ moduleType, success: false, error: errorMessage });
+      }
+    }
 
     // Update progress
     await orchestrator.updateProgress();
@@ -195,8 +211,19 @@ async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
         return { moduleType, success };
       });
 
-      const dependentResults = await Promise.all(dependentPromises);
-      results.push(...dependentResults);
+      const settledDependentResults = await Promise.allSettled(dependentPromises);
+      for (const [index, settledResult] of settledDependentResults.entries()) {
+        const moduleType = nextReadyModules[index];
+        if (settledResult.status === 'fulfilled') {
+          results.push(settledResult.value);
+        } else {
+          const errorMessage = settledResult.reason instanceof Error
+            ? settledResult.reason.message
+            : 'Unknown error during dependent module execution';
+          console.error(`Dependent module ${moduleType} failed:`, errorMessage);
+          results.push({ moduleType, success: false, error: errorMessage });
+        }
+      }
     }
 
     // Final progress update

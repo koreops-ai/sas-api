@@ -321,7 +321,14 @@ export class AnalysisOrchestrator {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await updateModuleStatus(module.id, 'failed', 0, undefined, errorMessage);
+      console.error(`Module ${moduleType} execution failed:`, error);
+      try {
+        await updateModuleStatus(module.id, 'failed', 0, undefined, errorMessage);
+        module.status = 'failed';
+        module.error = errorMessage;
+      } catch (dbError) {
+        console.error(`Failed to update module ${moduleType} status in database:`, dbError);
+      }
       return false;
     }
   }

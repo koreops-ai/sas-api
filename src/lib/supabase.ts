@@ -206,6 +206,8 @@ export async function createModule(
     cost: module.cost ?? 0,
   };
 
+  console.log('createModule: inserting into', TABLES.modules, 'with data:', JSON.stringify(dbModule));
+
   const { data, error } = await supabase
     .from(TABLES.modules)
     .insert(dbModule)
@@ -214,8 +216,11 @@ export async function createModule(
 
   if (error) {
     console.error('Error creating module:', error);
+    console.error('Failed dbModule:', JSON.stringify(dbModule));
     return null;
   }
+  
+  console.log('createModule: success, created:', data?.id);
   
   // Map back to application interface
   return data ? {

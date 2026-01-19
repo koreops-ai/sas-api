@@ -181,13 +181,21 @@ export class AnalysisOrchestrator {
    * Get modules that are ready to execute
    */
   getReadyModules(): ModuleType[] {
-    if (!this.analysis) return [];
+    if (!this.analysis) {
+      console.log('getReadyModules: no analysis');
+      return [];
+    }
+
+    console.log('getReadyModules: analysis.modules =', this.analysis.modules);
+    console.log('getReadyModules: this.modules map =', Array.from(this.modules.entries()));
 
     return this.analysis.modules.filter((moduleType) => {
       const status = this.getModuleStatus(moduleType);
+      const canExecute = this.canExecuteModule(moduleType);
+      console.log(`getReadyModules: ${moduleType} status=${status} canExecute=${canExecute}`);
       return (
         (status === 'pending' || status === 'revision_requested') &&
-        this.canExecuteModule(moduleType)
+        canExecute
       );
     });
   }

@@ -13,6 +13,7 @@ import type {
   CreditTransaction,
   Preset,
   ModuleStatus,
+  ModuleType,
   AnalysisStatus,
   HITLAction,
 } from '../types/database.js';
@@ -166,15 +167,47 @@ export async function getAnalysisModules(analysisId: string): Promise<AnalysisMo
     console.error('Error fetching modules:', error);
     return [];
   }
-  return data || [];
+  
+  // Map database columns to application interface
+  return (data || []).map((row) => ({
+    ...row,
+    module_type: row.module_id as ModuleType,
+    data: row.output_data,
+    error: row.error_message,
+    // Compute progress from status since DB doesn't have progress column
+    progress: row.status === 'completed' ? 100 : row.status === 'running' ? 50 : 0,
+  }));
 }
 
 export async function createModule(
-  module: Omit<AnalysisModule, 'id'>
+  module: {
+    analysis_id: string;
+    module_type: ModuleType;
+    status: ModuleStatus;
+    input_data?: Record<string, unknown> | null;
+    output_data?: Record<string, unknown> | null;
+    error_message?: string | null;
+    started_at?: string | null;
+    completed_at?: string | null;
+    cost?: number;
+  }
 ): Promise<AnalysisModule | null> {
+  // Map to actual database column names
+  const dbModule = {
+    analysis_id: module.analysis_id,
+    module_id: module.module_type, // DB uses module_id, not module_type
+    status: module.status,
+    input_data: module.input_data ?? null,
+    output_data: module.output_data ?? null,
+    error_message: module.error_message ?? null,
+    started_at: module.started_at ?? null,
+    completed_at: module.completed_at ?? null,
+    cost: module.cost ?? 0,
+  };
+
   const { data, error } = await supabase
     .from(TABLES.modules)
-    .insert(module)
+    .insert(dbModule)
     .select()
     .single();
 
@@ -182,12 +215,27 @@ export async function createModule(
     console.error('Error creating module:', error);
     return null;
   }
-  return data;
+  
+  // Map back to application interface
+  return data ? {
+    ...data,
+    module_type: data.module_id as ModuleType,
+    data: data.output_data,
+    error: data.error_message,
+    progress: data.status === 'completed' ? 100 : data.status === 'running' ? 50 : 0,
+  } : null;
 }
 
 export async function updateModule(
   id: string,
-  updates: Partial<AnalysisModule>
+  updates: Partial<{
+    status: ModuleStatus;
+    output_data: Record<string, unknown> | null;
+    error_message: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    cost: number;
+  }>
 ): Promise<AnalysisModule | null> {
   const { data, error } = await supabase
     .from(TABLES.modules)
@@ -200,26 +248,32 @@ export async function updateModule(
     console.error('Error updating module:', error);
     return null;
   }
-  return data;
+  
+  return data ? {
+    ...data,
+    module_type: data.module_id as ModuleType,
+    data: data.output_data,
+    error: data.error_message,
+    progress: data.status === 'completed' ? 100 : data.status === 'running' ? 50 : 0,
+  } : null;
 }
 
 export async function updateModuleStatus(
   id: string,
   status: ModuleStatus,
   progress?: number,
-  data?: Record<string, unknown>,
-  error?: string
+  outputData?: Record<string, unknown>,
+  errorMessage?: string
 ): Promise<boolean> {
-  const updates: Partial<AnalysisModule> = { status };
-  if (progress !== undefined) updates.progress = progress;
-  if (data) updates.data = data;
-  if (error) updates.error = error;
+  const updates: Record<string, unknown> = { status };
+  if (outputData) updates.output_data = outputData;
+  if (errorMessage) updates.error_message = errorMessage;
   if (status === 'running') updates.started_at = new Date().toISOString();
   if (status === 'completed' || status === 'failed') {
     updates.completed_at = new Date().toISOString();
   }
 
-  const result = await updateModule(id, updates);
+  const result = await updateModule(id, updates as Parameters<typeof updateModule>[1]);
   return result !== null;
 }
 

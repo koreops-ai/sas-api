@@ -96,14 +96,19 @@ export interface Analysis {
 export interface AnalysisModule {
   id: string;
   analysis_id: string;
-  module_type: ModuleType;
+  module_id: string; // This is actually the module type (e.g., 'market_demand')
+  module_type: ModuleType; // Computed/alias for module_id
   status: ModuleStatus;
-  progress: number;
+  progress: number; // Computed from status (0, 50, or 100)
+  input_data: Record<string, unknown> | null;
+  output_data: Record<string, unknown> | null;
+  error_message: string | null;
   started_at: string | null;
   completed_at: string | null;
+  created_at: string;
   cost: number;
-  data: Record<string, unknown> | null;
-  error: string | null;
+  data: Record<string, unknown> | null; // Alias for output_data
+  error: string | null; // Alias for error_message
 }
 
 // ============ HITL ============

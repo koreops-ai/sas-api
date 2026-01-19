@@ -110,12 +110,9 @@ export class AnalysisOrchestrator {
           analysis_id: this.analysisId,
           module_type: moduleType,
           status: 'pending',
-          progress: 0,
           started_at: null,
           completed_at: null,
           cost: 0,
-          data: null,
-          error: null,
         });
         if (newModule) {
           this.modules.set(moduleType, newModule);

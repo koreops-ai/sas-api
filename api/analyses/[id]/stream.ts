@@ -33,7 +33,10 @@ function sendHeartbeat(res: VercelResponse): void {
 }
 
 /**
- * Main SSE handler
+ * Main handler - supports both SSE streaming and REST fallback
+ *
+ * SSE mode (default): GET /api/analyses/[id]/stream?userId=...
+ * REST mode: GET /api/analyses/[id]/stream?userId=...&mode=rest (returns activities as JSON)
  */
 export default async function handler(
   req: VercelRequest,
@@ -76,6 +79,14 @@ export default async function handler(
 
   if (analysis.user_id !== userId) {
     res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+
+  // REST mode fallback - return activities as JSON (replaces /api/analyses/[id]/activities)
+  const mode = req.query.mode as string;
+  if (mode === 'rest') {
+    const activities = await getActivityLogs(analysisId);
+    res.status(200).json(activities);
     return;
   }
 

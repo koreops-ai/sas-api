@@ -34,7 +34,7 @@ import {
 import type { ModuleType } from '../../../src/types/database.js';
 import type { ModuleExecutionContext, ModuleResult } from '../../../src/types/modules.js';
 import { synthesizeModule, synthesizeGlobal } from '../../../src/lib/agents/synthesis.js';
-import type { ModuleSynthesisResult } from '../../../src/lib/agents/types.js';
+import type { ModuleSynthesisResult, AgentResult } from '../../../src/lib/agents/types.js';
 
 // Import module executors
 import { executeMarketDemand } from '../../../src/modules/market-demand.js';
@@ -255,13 +255,16 @@ async function executeModuleWithLogging(
       let moduleSynthesis: ModuleSynthesisResult | null = null;
       try {
         // Create a simple agent result from the module data for synthesis
-        const agentResults = [{
-          agent: moduleType,
+        const agentResults: AgentResult[] = [{
+          agent: 'web_research_agent',
           provider: 'anthropic',
           model: 'claude-sonnet-4-20250514',
           summary: `Completed ${moduleType.replace(/_/g, ' ')} analysis`,
-          sources: [] as string[],
-          cost: result.cost,
+          data: baseData,
+          sources: [],
+          evidence_paths: [],
+          cost: result.cost ?? 0,
+          duration_ms: 0,
         }];
         moduleSynthesis = await synthesizeModule(moduleType, baseData, agentResults);
       } catch (synthError) {

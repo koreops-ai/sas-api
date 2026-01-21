@@ -597,6 +597,32 @@ export async function getLatestEvidenceBySource(
   return data ?? null;
 }
 
+// ============ ACTIVITY LOGS ============
+
+export interface ActivityLog {
+  id: string;
+  analysis_id: string;
+  module_type: string | null;
+  activity_type: string;
+  message: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export async function getActivityLogs(analysisId: string): Promise<ActivityLog[]> {
+  const { data, error } = await supabase
+    .from('activity_logs')
+    .select('*')
+    .eq('analysis_id', analysisId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching activity logs:', error);
+    return [];
+  }
+  return data || [];
+}
+
 // ============ STORAGE (Screenshots, etc.) ============
 
 export async function uploadEvidence(
